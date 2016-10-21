@@ -1,0 +1,513 @@
+
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<style type="text/css">body{margin:40px
+auto;max-width:900px;line-height:1.6;font-size:18px;color:#444;padding:0
+10px}h1,h2,h3{line-height:1.2}</style>
+
+
+<style>
+@import url('https://fonts.googleapis.com/css?family=Lobster|Teko');
+@import url('https://fonts.googleapis.com/css?family=Lobster|Scope+One|Teko');
+</style>
+
+<style>
+
+
+
+h1 {
+  background-color: none;
+
+  font-size: 70px;
+  font-family: 'Lobster', cursive;
+  font-family: 'Teko', sans-serif;
+  text-align: center;
+  padding-bottom: 2px;
+}
+
+h3 {
+  color: black;
+  font-size: 15px;
+  font-family: 'Lobster', cursive;
+  font-family: 'Teko', sans-serif;
+  font-family: 'Scope One', serif;
+  text-align: center;
+  padding-bottom: 20px;
+
+}
+
+</style>
+
+
+
+</head>
+
+
+<meta charset="utf-8">
+<body style="background-color: white">
+  <h1>The full James Bond Franchise in a Scatterplot</h1>
+  <h3>Thanks to the data I scraped from <a href="https://www.rottentomatoes.com/franchise/james_bond_007">Rottentomatoes.com</a>, now we can visually compare how critics and people have rated the all times 007 agent's movies. Click the bottons and compare!</h3>
+  <p>*colors by lead actor and area of circles by box office in millions!</p>
+
+
+
+</body>
+<style>
+
+
+body {
+
+  font: 10px sans-serif;
+}
+
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
+.dot {
+/*  stroke: #000; */
+}
+
+
+.d3-tip {
+  line-height: 1;
+  font-weight: bold;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.8);
+  color: #fff;
+  border-radius: 2px;
+}
+
+/* Creates a small triangle extender for the tooltip */
+.d3-tip:after {
+  box-sizing: border-box;
+  display: inline;
+  font-size: 10px;
+  width: 100%;
+  line-height: 1;
+  color: rgba(0, 0, 0, 0.8);
+  content: "\25BC";
+  position: absolute;
+  text-align: center;
+}
+
+/* Style northward tooltips differently */
+.d3-tip.n:after {
+  margin: -1px 0 0 0;
+  top: 100%;
+  left: 0;
+}
+
+#control-panel {
+  text-align: center;
+
+}
+
+
+
+</style>
+<body>
+<div id="control-panel">
+  <hr>
+  <strong>Adjust rating:</strong>
+  <button id="Overall-rating">overall rating</button>
+  <button id="Peoples-rating">People rating</button>
+  <button id="Critics-rating">Critics rating</button>
+
+  <hr>
+</div>
+
+<script src="//d3js.org/d3.v3.min.js"></script>
+<script src="http://labratrevenge.com/d3-tip/javascripts/d3.tip.v0.6.3.js"></script>
+<script src="http://cdnjs.cloudflare.com/ajax/libs/queue-async/1.0.7/queue.min.js"></script>
+<script>
+
+// Comment one line: every time you are using D3 you can use this code.
+/* Comment more lines: If you awnt to change the width and hight, vhange the 960 or
+the 500. 960 is the width, 500 is the height( all them pretty standard)
+*/
+
+
+var margin = {top: 20, right: 20, bottom: 30, left: 40},
+    width = 960 - margin.left - margin.right,
+    height = 500 - margin.top - margin.bottom;
+
+// Both of this cales are of the tyoe d3.scale.linear()
+//TYPE is linear() in this scale
+//Minimun input is 0, max is 70,000,
+
+
+var x = d3.scale.linear()
+    .domain([1959, 2016])
+    .range([0, width]);
+
+/* TYPE of this scale is linear
+INPUTs;
+minimum is 0 years old
+Maximun is 100 years old
+OUTPUTs:
+Minimun output is height
+Maximun output is 0(100 year old will be 0 on d3's ideas of the axis)
+*/
+
+var y = d3.scale.linear()
+    .domain([0, 100])
+    .range([height, 0]);
+
+/* Another scale!
+.category10() scale, which is an ordinal scale
+N. America +> blue, Asia=> black etc.
+Based on categories, not on an even flow beige to red or green
+to red.
+REMEMBER: RANGE IS OUTPUT
+*/
+
+var color = d3.scale.category10().range(['#66c2a5', '#fc8d62', '#8da0cb', '#e78ac3', '#a6d854', '#ffd92f','black']);
+
+/* type of the scale is sqrt()
+You only use this with radius of circles
+But every single tiem you are using a scale
+with the radius of a circle
+you will use this scale
+
+INPUT:
+minimum is 0
+maximum is 1,000,000,000
+OUTPUT:
+smallest circle will be 2px
+largest cicle will be 30px
+*/
+
+var radiusScale = d3.scale.sqrt()
+    .domain([0, 1000000000])
+    .range([2, 30]);
+
+/* This is the set up for the x axis orient
+("bottom") is where the ticks go
+.scale(x) means "we're going to draw an axis based on the
+scale called x"
+
+This depends on our scale 'x' - so if we chanfe our scale 'x'
+we need to update or xAxis.
+*/
+
+var xAxis = d3.svg.axis()
+    .scale(x)
+    .orient("bottom");
+
+/*Exact same thing with y axis
+This depends of our scale 'y' - so if we change out scale 'y'
+we need to update out yAxis
+*/
+
+
+var yAxis = d3.svg.axis()
+    .scale(y)
+    .orient("left");
+
+//Now we are starting to put things on the page
+
+/* d3.select("body") - go grab the 'body' element on the page
+.append("svg") - put an <svg> element inside of */
+
+
+var svg = d3.select("body").append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+var tip = d3.tip()
+  .attr('class', 'd3-tip')
+  .offset([-10, 0])
+  .html(function(d) {
+    return "<strong style='color: yellow'>" + d.name + "</strong>" +
+           "<br>Lead actor: " + d.Lead_roll +
+           "<br> rating in %: " + d.average_rating_int +
+           "<br>Year published: " + d.year_int +
+
+           "<br>Gross box office: " + d.Gross_with_inflation;
+
+  })
+
+/* de.csv("filename.csv") is another way to do this, its fine but its
+not very flexible. You cant pull in multiple sources, se e are just
+going to use QUEUE!*/
+
+
+svg.call(tip);
+
+queue()
+  .defer(d3.csv, "Bondfrancise5.csv", function(d) {
+    /*
+      if you use .defer the THIRD parameter can be a function
+     that is run on every single row.
+     d3 reads in numbers as strings, so we need to fix that!
+
+     1) convert life_expectancy into a number
+     2) convert GDP_per_capita into a number
+     3) return the edited version of d
+    */
+    //d.Gross_with_inflation = parseFloat(d.Gross_with_inflation.replace(',', ''));
+    var num_list = d.Gross_with_inflation.split(',');
+    new_num = '';
+    num_list.forEach(function (d, i) {
+      new_num += d;
+    });
+    d.Gross_with_inflation = new_num;
+    d.average_rating_int = +d.average_rating_int;
+    d.year_int = +d.year_int;
+    return d;
+  })
+  .await(ready);
+/*
+We finally have our data. We are going to use it instead of this
+function called 'ready'.
+Because we used await(ready), ready gets two parameters
+the first is an error. You can ignore it.
+The second is our data. The more thing we defer, the more parameters
+we have.
+*/
+
+
+function ready(error, data) {
+
+/*
+We are inside our data. IF its error it will shows us in the page.
+*/
+
+  if (error) throw error;
+
+  // var xMax = d3.max(data, function(d) { return d.GDP_per_capita; })
+  //var largestLifeExpectancy = d3.max(data, function(d) { return d.life_expectancy; })
+
+  //y.domain([0, largestLifeExpectancy]);
+
+  // var xRange = [0, xMax];
+  // var yRange = [0, yMax];
+
+/*
+Draw our x axis based on the xAxis variable (which depends on the x scale)
+*/
+
+  svg.append("g")
+      .attr("class", "x axis")
+      .attr("transform", "translate(0," + height + ")")
+      .call(xAxis)
+    .append("text")
+      .attr("class", "label")
+      .attr("x", width)
+      .attr("y", -6)
+      .style("text-anchor", "end")
+      .text("year of publication");
+
+/*
+Drawing the Y axis on the page using the y axis variable
+which depends on the y axis scale.
+*/
+
+  svg.append("g")
+      .attr("class", "y axis")
+      .call(yAxis)
+    .append("text")
+      .attr("class", "label")
+      .attr("transform", "rotate(-90)")
+      .attr("y", 6)
+      .attr("dy", ".71em")
+      .style("text-anchor", "end")
+      .text("rating in %")
+
+/*
+Go to out svg and try to find every single thing with
+the class of dot. Then attach out data to it.
+Save it as a variable dots.
+*/
+
+
+  var dots = svg.selectAll(".dot")
+      .data(data, function(d) {
+        return d.name;
+      })
+/*
+If you could not find enough dots, for every one of the dots you could not find
+draw a circle, give it the class od 'dot', and set radius 0.
+*/
+
+
+  dots.enter().append("circle")
+      .attr("class", "dot")
+      .attr("r", 0);
+
+/*
+Go back out again
+Find all of the things with the class of dot
+(Remember how we gave of those new circles a class of dot?)
+We are going to get all those new circles
+We are going to style them, give them color, position and tooltips!
+*/
+
+  svg.selectAll(".dot")
+      .style("fill", function(d) {
+        // use the category10 scale
+        return color(d.Lead_roll);
+      })
+      .on('mouseover', tip.show)
+      .on('mouseout', tip.hide)
+      .attr("r", function(d) {
+        console.log('Name: ' + d.name, 'Gross: ' + d.Gross_with_inflation);
+        // r is radius (a.k.a the size)
+        return radiusScale(d.Gross_with_inflation);
+      })
+      .attr("cx", function(d) {
+        //cx is the position of the center on the x axis
+        return x(d.year_int);
+      })
+      .attr("cy", function(d) {
+        //cy is the position of the center on the y axis
+        return y(d.average_rating_int);
+      });
+
+/*
+Go out and find a button with the id of 'y-0-max'
+and if someone clicks it
+Do something (such as console.log)
+*/
+
+  d3.select("#Peoples-rating")
+    .on("click", function() {
+/* what we want: when we click the button,
+It changes from 0-100 on the y-axis to 0-maximum life
+expectancy
+What we do first: when we click the button,
+it changes from 0-100 to 0-80
+*/
+
+      y.domain([0,100]);
+
+      svg.select(".y.axis")
+          .call(yAxis)
+          .transition()
+          .duration(1500)
+
+      svg.selectAll(".dot")
+          .transition()
+          .duration(1500)
+          .attr("cy", function(d) {
+                //cy is the position of the center on the y axis
+           return y(d.peoples_rating);
+         });
+  });
+
+  d3.select("#Critics-rating")
+     .on("click", function() {
+        /* what we want: when we click the button,
+        It changes from 0-100 on the y-axis to 0-maximum life
+        expectancy
+        What we do first: when we click the button,
+        it changes from 0-100 to 0-80
+        */
+
+      y.domain([0,100]);
+
+      svg.select(".y.axis")
+         .call(yAxis)
+         .transition()
+         .duration(1500)
+
+      svg.selectAll(".dot")
+         .transition()
+         .duration(1500)
+         .attr("cy", function(d) {
+                      //cy is the position of the center on the y axis
+         return y(d.critics_rating);
+        });
+
+      })
+
+
+      d3.select("#Overall-rating")
+        .on("click", function() {
+      /* what we want: when we click the button,
+      It changes from 0-100 on the y-axis to 0-maximum life
+      expectancy
+      What we do first: when we click the button,
+      it changes from 0-100 to 0-80
+      */
+
+          y.domain([0,100]);
+
+          svg.select(".y.axis")
+              .call(yAxis)
+              .transition()
+              .duration(1500)
+
+          svg.selectAll(".dot")
+              .transition()
+              .duration(1500)
+              .attr("cy", function(d) {
+                    //cy is the position of the center on the y axis
+               return y(d.average_rating_int);
+             });
+      });
+
+      d3.select("#Africa")
+        .on("click", function() {
+          /*
+            Go through all of our data points
+            and filter out anything that does not have
+            the continent of Africa.
+          */
+          var africa = data.filter(function(d) {
+            return d.Continent === "Africa";
+          });
+
+          /*
+            Now, go find everything with a class of 'dot'
+            and attach our 'africa' data to those dots
+          */
+          var africa_dots = svg.selectAll(".dot")
+              .data(africa, function(d) {
+                return d.Country;
+              });
+
+          africa_dots.exit().remove();
+
+        })
+        d3.select("#show-asia")
+          .on("click", function() {
+            /*
+              Go through all of our data points
+              and filter out anything that does not have
+              the continent of Africa.
+            */
+            var asia = data.filter(function(d) {
+              return d.Continent === "Asia";
+            });
+
+            /*
+              Now, go find everything with a class of 'dot'
+              and attach our 'africa' data to those dots
+            */
+            var asia_dots = svg.selectAll(".dot")
+                .data(asia, function(d) {
+                  return d.Country;
+                });
+
+            asia_dots.exit().remove();
+
+          })
+
+};
+
+
+</script>
+</body>
+
+</html>
